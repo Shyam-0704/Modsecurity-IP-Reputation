@@ -39,11 +39,11 @@ User Request → ModSecurity WAF → Python Script (VirusTotal API) → Log or B
     -> Copy it to:
          $ sudo cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf
 
-   -> Then edit the conf file:
+     -> Then edit the conf file:
          $ sudo nano /etc/modsecurity/modsecurity.conf
 
-       => Find the line # SecRuleEngine
-            <strong> SecRuleEngine DetectionOnly --> SecRuleEngine On </strong>
+       => Find the line #SecRuleEngine
+            SecRuleEngine DetectionOnly --> SecRuleEngine On
 
       # This switches from "detection only" mode to actively blocking malicious requests.
 
