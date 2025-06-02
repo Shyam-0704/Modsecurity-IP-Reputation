@@ -16,17 +16,17 @@ User Request → ModSecurity WAF → Python Script (VirusTotal API) → Log or B
 
 ## Installation
 # 1. Update the system
-   $ sudo apt update
-   $ sudo apt upgrade -y
+      $ sudo apt update
+      $ sudo apt upgrade -y
 
 # 2. Install Apache (if not installed)
-   $ sudo apt install apache2 -y
+      $ sudo apt install apache2 -y
 
 # 3. Install Dependencies
-   $ sudo apt install libapache2-mod-security2 -y
+      $ sudo apt install libapache2-mod-security2 -y
 
 # 4. Enable ModSecurity
-   $ sudo apachectl -M | grep security2_module
+      $ sudo apachectl -M | grep security2_module
 
 # 5. If you don’t see security2_module in the output, enable it manually:
      $ sudo a2enmod security2
