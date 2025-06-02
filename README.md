@@ -54,7 +54,7 @@ User Request → ModSecurity WAF → Python Script (VirusTotal API) → Log or B
       Syntax OK
 
 # 8. Verify Installation
-   $ sudo systemctl reload apache2
+         $ sudo systemctl reload apache2
 
    # After:
       -> Open any browser and search http://localhost
