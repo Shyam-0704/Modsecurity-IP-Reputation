@@ -10,12 +10,61 @@ User Request → ModSecurity WAF → Python Script (VirusTotal API) → Log or B
 ## Prerequisites
 - Ubuntu 20.04 or later
 - Apache2
-- ModSecurity v3
+- ModSecurity v2
 - Python 3.8+
 - VirusTotal API key
 
 ## Installation
-1. Install Apache2 and ModSecurity:
-   ```bash
-   sudo apt update
-   sudo apt install apache2 libapache2-mod-security2
+1. Update the system
+   $ sudo apt update
+   $ sudo apt upgrade -y
+
+2. Install Apache (if not installed)
+   $ sudo apt install apache2 -y
+
+3. Install Dependencies
+   $ sudo apt install libapache2-mod-security2 -y
+
+4. Enable ModSecurity
+   $ sudo apachectl -M | grep security2_module
+
+5. If you don’t see security2_module in the output, enable it manually:
+     $ sudo a2enmod security2
+     $ sudo systemctl restart apache2
+
+6. Configure ModSecurity
+    -> The default configuration file is:
+         $ /etc/modsecurity/modsecurity.conf-recommended
+
+    -> Copy it to:
+         $ sudo cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf
+
+   -> Then edit the conf file:
+         $ sudo nano /etc/modsecurity/modsecurity.conf
+
+       => Find the line #SecRuleEngine
+          SecRuleEngine DetectionOnly --> SecRuleEngine On
+
+      # This switches from "detection only" mode to actively blocking malicious requests.
+
+7. Test Configuration
+      $ sudo apachectl configtest
+
+   # Output:
+      Syntax OK
+
+8. Verify Installation
+   $ sudo systemctl reload apache2
+
+   # After:
+      -> Open any browser and search http://localhost
+      -> If the default page appears then the apache installed perfectly.
+
+9. OWASP Rules configuration:
+    
+ 
+
+
+
+
+
