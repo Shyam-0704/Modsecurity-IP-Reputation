@@ -61,7 +61,30 @@ User Request → ModSecurity WAF → Python Script (VirusTotal API) → Log or B
       -> If the default page appears then the apache installed perfectly.
 
 # 9. OWASP Rules configuration:
-    
+
+      The OWASP Core Rule Set (CRS) enhances ModSecurity's capabilities
+      $ cd /usr/share
+      $ sudo git clone https://github.com/coreruleset/coreruleset.git
+      $ cd coreruleset
+      $ sudo cp crs-setup.conf.example crs-setup.conf
+
+# 10.  Edit the Apache configuration to include the CRS:
+      $ sudo nano /etc/apache2/mods-enabled/security2.conf
+      
+# 11. Add these lines inside the <IfModule security2_module> block:
+
+      $ IncludeOptional /usr/share/coreruleset/crs-setup.conf
+      $ IncludeOptional /usr/share/coreruleset/rules/*.conf
+
+# 12. Reload Apache:
+
+      $ sudo systemctl reload apache2
+      
+# 13. ModSecurity v2 is now active on your Ubuntu system! You can check logs at:
+
+       $ nano /var/log/apache2/modsec_audit.log
+
+
  
 
 
