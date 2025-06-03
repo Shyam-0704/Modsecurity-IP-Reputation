@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ModSecurity Monitoring Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+    body {
+      background-color: #121c2c;
+      color: #e1e6ee;
+      font-family: 'Inter', sans-serif;
+      padding: 30px 40px;
+      user-select: none;
+    }
+
+    h1 {
+      font-weight: 700;
+      font-size: 2.4rem;
+      color: #1ec5e5;
+      margin-bottom: 0.1rem;
+    }
+
+    p.subtitle {
+      font-weight: 500;
+      font-size: 1rem;
+      color: #8ab6d6;
+      margin-bottom: 2.5rem;
+    }
+
+    .card {
+      background-color: #1f2f47;
+      border-radius: 12px;
+      border: none;
+      padding: 25px 30px;
+      box-shadow: 0 3px 15px rgb(0 0 0 / 0.25);
+      transition: box-shadow 0.3s ease;
+    }
+    .card:hover {
+      box-shadow: 0 6px 25px rgb(30 197 229 / 0.45);
+    }
+
+    h4, h5 {
+      color: #4dd0ff;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 12px;
+      font-size: 0.9rem;
+    }
+    thead tr {
+      background-color: #253955;
+    }
+    thead th {
+      color: #a4b8d3;
+      font-weight: 600;
+      padding: 14px 20px;
+      text-align: left;
+    }
+    tbody tr {
+      background-color: #17253d;
+      transition: background-color 0.25s ease;
+      cursor: default;
+      border-radius: 8px;
+    }
+    tbody tr:hover {
+      background-color: #1c3a67;
+    }
+    tbody td {
+      padding: 12px 20px;
+      color: #cad9f2;
+    }
+    tbody td:nth-child(2), /* IP */
+    tbody td:nth-child(4), /* Rule IDs */
+    tbody td:nth-child(7)  /* Threat score */ {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* Badges */
+    .badge-high {
+      background-color: #0d47a1;
+      color: #a2d2ff;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 14px;
+      border: 1.5px solid #4dd0ff;
+      user-select: none;
+    }
+    .badge-medium {
+      background-color: #1565c0;
+      color: #b0d7ff;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 14px;
+      border: 1.2px solid #81d4fa;
+      user-select: none;
+    }
+    .badge-low {
+      background-color: #1e88e5;
+      color: #d1eaff;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 14px;
+      border: 1px solid #bbdefb;
+      user-select: none;
+    }
+
+    /* Chart containers */
+    .chart-container {
+      height: 320px;
+      width: 100%;
+    }
+
+    /* Scrollable table */
+    .table-wrapper {
+      max-height: 480px;
+      overflow-y: auto;
+      border-radius: 12px;
+      box-shadow: inset 0 0 15px #0a1b36;
+      border: 1px solid #1a304e;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #3a587a;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <header class="text-center mb-4">
+      <h1>ModSecurity SOC Monitoring</h1>
+      <p class="subtitle">Real-time ModSecurity + OWASP CRS Alerts — Auto-refresh every 20 seconds</p>
+    </header>
+
+    <div class="row g-4 mb-5">
+      <div class="col-lg-6">
+        <div class="card">
+          <h5>Top Threat Scores by Client IP</h5>
+          <div class="chart-container">
+            <canvas id="threatChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <h5>Severity Distribution</h5>
+          <div class="chart-container">
+            <canvas id="severityChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-3">
+      <h4>Detailed Log Entries</h4>
+      <div class="table-wrapper mt-3">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Client IP</th>
+              <th>Request</th>
+              <th>Rule IDs</th>
+              <th>Severities</th>
+              <th>Messages</th>
+              <th>Threat Score</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer>
+      &copy; 2025 SOC Monitoring • Powered by ModSecurity &amp; OWASP CRS
+    </footer>
+  </div>
+
+  <script>
+    const refreshInterval = 20000; // 20 seconds
+
+    async function fetchAndRender() {
+      const tableBody = document.getElementById('logTableBody');
+      tableBody.style.opacity = 0.4;
+
+      try {
+        const response = await fetch('modsec_data.json?_=' + Date.now());
+        const data = await response.json();
+
+        tableBody.innerHTML = '';
+
+        const ipScores = {};
+        const severityCounts = {};
+
+        data.forEach(log => {
+          const tr = document.createElement('tr');
+
+          const timestamp = log.timestamp || '-';
+          const client_ip = log.client_ip || '-';
+          const request = log.request_line || '-';
+          const rule_ids = (log.rule_ids || []).join(', ') || '-';
+          const severities = (log.severities || []).join(', ') || '-';
+          const messages = (log.messages || []).join('<br>') || '-';
+          const score = log.threat_score || 0;
+
+          // Aggregate for charts
+          ipScores[client_ip] = (ipScores[client_ip] || 0) + score;
+          (log.severities || []).forEach(sev => {
+            const sevUp = sev.toUpperCase();
+            severityCounts[sevUp] = (severityCounts[sevUp] || 0) + 1;
+          });
+
+          // Determine badge class for score
+          let badgeClass = 'badge-low';
+          if (score >= 15) badgeClass = 'badge-high';
+          else if (score >= 7) badgeClass = 'badge-medium';
+
+          tr.innerHTML = `
+            <td>${timestamp}</td>
+            <td>${client_ip}</td>
+            <td>${request}</td>
+            <td><code>${rule_ids}</code></td>
+            <td>${severities}</td>
+            <td>${messages}</td>
+            <td><span class="${badgeClass}">${score}</span></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+
+        // Prepare Top IPs data
+        const topIPs = Object.entries(ipScores)
+          .sort((a,b) => b[1] - a[1])
+          .slice(0, 7);
+
+        const threatChartData = {
+          labels: topIPs.map(e => e[0]),
+          datasets: [{
+            label: 'Threat Score',
+            data: topIPs.map(e => e[1]),
+            backgroundColor: '#4dd0ff',
+            borderColor: '#0d47a1',
+            borderWidth: 2,
+            borderRadius: 6,
+            hoverBackgroundColor: '#81d4fa',
+          }]
+        };
+
+        // Prepare Severity distribution
+        const severityLabels = Object.keys(severityCounts);
+        const severityValues = Object.values(severityCounts);
+        const severityColors = {
+          CRITICAL: '#0d47a1',
+          ERROR: '#1565c0',
+          WARNING: '#1e88e5',
+          NOTICE: '#42a5f5',
+          INFO: '#64b5f6',
+          DEFAULT: '#90caf9'
+        };
+        const severityBgColors = severityLabels.map(l => severityColors[l] || severityColors.DEFAULT);
+
+        const severityChartData = {
+          labels: severityLabels,
+          datasets: [{
+            label: 'Severity Counts',
+            data: severityValues,
+            backgroundColor: severityBgColors,
+            borderColor: '#0a315b',
+            borderWidth: 1,
+          }]
+        };
+
+        updateChart(threatChart, threatChartData);
+        updateChart(severityChart, severityChartData);
+
+        tableBody.style.opacity = 1;
+      } catch (error) {
+        console.error('Error loading JSON:', error);
+      }
+    }
+
+    let threatChart = null;
+    let severityChart = null;
+
+    function updateChart(chart, data) {
+      if (chart) {
+        chart.data = data;
+        chart.update();
+      }
+    }
+
+    window.onload = () => {
+      const ctxThreat = document.getElementById('threatChart').getContext('2d');
+      threatChart = new Chart(ctxThreat, {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#a4c7ff', stepSize: 1 },
+              grid: { color: '#183058' }
+            },
+            x: {
+              ticks: { color: '#90caf9' },
+              grid: { color: '#122543' }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#a4c7ff' }
+            },
+            tooltip: {
+              backgroundColor: '#0f2140',
+              titleColor: '#4dd0ff',
+              bodyColor: '#9bd1ff'
+            }
+          }
+        }
+      });
+
+      const ctxSeverity = document.getElementById('severityChart').getContext('2d');
+      severityChart = new Chart(ctxSeverity, {
+        type: 'doughnut',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: { color: '#a4c7ff', font: { weight: '600' } },
+              position: 'right'
+            },
+            tooltip: {
+              backgroundColor: '#0f2140',
+              titleColor: '#4dd0ff',
+              bodyColor: '#9bd1ff'
+            }
+          }
+        }
+      });
+
+      fetchAndRender();
+      setInterval(fetchAndRender, refreshInterval);
+    };
+  </script>
+</body>
+</html>
