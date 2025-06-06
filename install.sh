@@ -31,8 +31,11 @@ sudo apt update
 sudo apt install -y apache2 libapache2-mod-security2 python3 python3-pip git
 
 # Step 2: Install Python dependencies
+python3 -m venv venv
+source venv/bin/activate
 echo "Installing Python dependencies..."
 sudo pip3 install requests
+deactivate
 
 
 
