@@ -12,13 +12,23 @@ User Request → ModSecurity WAF → Python Script (VirusTotal API) → Log or B
 - Apache2
 - ModSecurity v2
 - Python 3.8+
-- VirusTotal API key
+- VirusTotal API key + Alien Vault + Abuse IPDB
+  
+## One Step Installation:
+      git clone https://github.com/Shyam-0704/Modsecurity-IP-Reputation.git
+      cd Modescurity-IP-Reputation
+      sudo pip3 install -r requirements.txt
+      sh ./install.sh
 
-## Installation
+##===============================================================================================================================================================##
+      
+## Manual Installation
 # 1. Update the system
       $ sudo apt update
       $ sudo apt upgrade -y
-
+# 1.1 Install all the requirements
+      $ sudo pip3 install -r requirements.txt
+      
 # 2. Install Apache (if not installed)
       $ sudo apt install apache2 -y
 
@@ -29,8 +39,8 @@ User Request → ModSecurity WAF → Python Script (VirusTotal API) → Log or B
       $ sudo apachectl -M | grep security2_module
 
 # 5. If you don’t see security2_module in the output, enable it manually:
-     $ sudo a2enmod security2
-     $ sudo systemctl restart apache2
+      $ sudo a2enmod security2
+      $ sudo systemctl restart apache2
 
 # 6. Configure ModSecurity
     -> The default configuration file is:
@@ -50,13 +60,13 @@ User Request → ModSecurity WAF → Python Script (VirusTotal API) → Log or B
 # 7. Test Configuration
       $ sudo apachectl configtest
 
-   # Output:
+   Output:
       Syntax OK
 
 # 8. Verify Installation
          $ sudo systemctl reload apache2
 
-   # After:
+   After:
       -> Open any browser and search http://localhost
       -> If the default page appears then the apache installed perfectly.
 
