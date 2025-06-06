@@ -1,5 +1,3 @@
-
-
 # ModSecurity with Python IP Reputation Check
 
 This project integrates ModSecurity with Apache on Ubuntu, using a Python script to check IP reputation via VirusTotal and log or block malicious IPs.
